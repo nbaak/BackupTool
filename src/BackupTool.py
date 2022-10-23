@@ -14,6 +14,7 @@ CFG_FILE = os.path.join(THIS_PATH, "config.ini")
 CFG_SECTION = "backuptool"
 FILE_TABLE = os.path.join(THIS_PATH, "files.json")
 BACKUP_ARCHIVE = os.path.join(THIS_PATH, "archive")
+TMP_ARCHIVE = os.path.join(THIS_PATH, "tmp")
 
 config.create(CFG_FILE, CFG_SECTION, {'backup_root': f"{THIS_PATH}/archive", 'number': 5}) # initial
 config_data = config.read(CFG_FILE, CFG_SECTION)
@@ -128,6 +129,7 @@ def backup_dry_run(run_for_all=True, alias=None):
         if run_for_all or label==alias:
             print(f"Create Backup for {label}")
      
+
 def backup_run(run_for_all=True, alias=None):
     # get current files
     file_list = jsonio.read(FILE_TABLE)
@@ -162,7 +164,43 @@ def backup_run(run_for_all=True, alias=None):
             jsonio.write(FILE_TABLE, file_list)
            
 def restore_tool(alias):
-    print("RESTORE", alias)
+    print("restoring", alias, '...')
+    
+    file_list = jsonio.read(FILE_TABLE)
+    if not file_list:
+        exit()
+    
+    if alias in file_list:
+        if date:=file_list[alias]['last_backup']:
+            backup_path = file_list[alias]['path']
+            backup_name = os.path.basename(backup_path)
+            zip_path = os.path.join(BACKUP_ARCHIVE, alias, f"{alias}_{date}.zip")
+
+            unzip_path = os.path.join(TMP_ARCHIVE, alias)
+            but.unpack(zip_path, unzip_path)            
+            tmp_path = os.path.join(unzip_path, f"{alias}_{date}", backup_name)
+            
+            if is_dir(backup_path):
+                restore_folder(tmp_path, backup_path)
+            elif is_file(backup_path):
+                restore_file(tmp_path, backup_path)
+            else:
+                print("ERROR")
+                exit()
+            
+            print(f"restored: {alias}")    
+            but.remove_dir(unzip_path)
+                
+        else:
+            print("no backups so far")
+            
+def restore_file(src, dst):
+    but.move(src, dst)
+
+def restore_folder(src, dst):
+    but.remove_dir(dst)
+    but.move(os.path.join(src), dst)
+    
 
 def config_update(key, value):
     if key == "backup_root":

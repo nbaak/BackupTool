@@ -15,25 +15,15 @@ def create(folder, filename, compress=zipfile.ZIP_DEFLATED):
         print(e)
 
 def make_archive(source, destination):
+    #http://www.seanbehan.com/how-to-use-python-shutil-make_archive-to-zip-up-a-directory-recursively-including-the-root-folder/
     base = os.path.basename(destination)
     name = base.split('.')[0]
     format_ = base.split('.')[1]
     archive_from = os.path.dirname(source)
     archive_to = os.path.basename(source.strip(os.sep))
+    print(source, destination, archive_from, archive_to)
     shutil.make_archive(name, format_, archive_from, archive_to)
     shutil.move('%s.%s'%(name,format_), destination)
-    
-    
-def unpack(archive, destination):
-    with zipfile.ZipFile(archive, 'r') as zip_obj:
-        zip_obj.extractall(destination)
-        #zip_obj.extract(member='test_data',path=destination)
-        
-        # lst = zip_obj.namelist()
-        #
-        # for n in lst:
-        #     print("-", n)
-        #     zip_obj.extract(n, destination)
 
 if __name__ == "__main__":
     pass

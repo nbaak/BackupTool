@@ -11,12 +11,15 @@ def get_basename(path):
 def copy(source, destination):
     make_dir(destination)
     destination = os.path.join(destination, get_basename(source))
-    
+    print(source, destination)
     if os.path.isfile(source):
         copy_file(source, destination)
         
     elif os.path.isdir(source):
         copy_fodler(source, destination)
+        
+def move(source, destination):
+    shutil.move(source, destination)
 
 def copy_file(source, destination):
     if os.path.isfile(source):
