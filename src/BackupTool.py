@@ -3,234 +3,29 @@
 import argparse
 import pathlib
 import os
-import config
-import jsonio
 import backupTool as but
-from datetime import datetime 
-import time
+from backupTool.but_file import is_file
 
-THIS_PATH = pathlib.Path(__file__).parent.resolve()
-CFG_FILE = os.path.join(THIS_PATH, "config.ini")
-CFG_SECTION = "backuptool"
-FILE_TABLE = os.path.join(THIS_PATH, "files.json")
-BACKUP_ARCHIVE = os.path.join(THIS_PATH, "archive")
-TMP_ARCHIVE = os.path.join(THIS_PATH, "tmp")
-
-config.create(CFG_FILE, CFG_SECTION, {'backup_root': f"{THIS_PATH}/archive", 'number': 5}) # initial
-config_data = config.read(CFG_FILE, CFG_SECTION)
-
-def is_dir(path) -> bool:
-    return os.path.isdir(path)
-    
-def is_file(path) -> bool:
-    return os.path.isfile(path)
-
-def convert_bytes(size):
-    """ Convert bytes to KB, or MB or GB"""
-    for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
-        if size < 1024.0:
-            return "%3.1f %s" % (size, x)
-        size /= 1024.0        
-    return size
-
-import random
-import string
-
-def get_random_string(length):
-    # https://pynative.com/python-generate-random-string/
-    # choose from all lowercase letter
-    letters = string.ascii_lowercase
-    result_str = ''.join(random.choice(letters) for i in range(length))
-    #print("Random string of length", length, "is:", result_str)
-    return result_str
-
-def find_in_dict(dictionary, search_key, seach_value) -> str:
-    for label,data in dictionary.items():
-        for key, value in data.items():
-            if key==search_key and value==seach_value:
-                return label
-    
-    return None # found nothing
-
-def show_tool(details=False):
-    file_list = jsonio.read(FILE_TABLE)
-    if not file_list:
-        print("No Backups found")
-        exit()
-        
-    for label, data in file_list.items():
-        if details:
-            entry = f"{label}: {data['path']} ({convert_bytes(data['last_backup_size'])}) - {data['last_backup']}" 
-        else:
-            entry = f"{label}: {data['path']}" 
-        print(entry)
-    
-def add_tool(target, alias=None):
-    # get current files
-    file_list = jsonio.read(FILE_TABLE)
-    if not file_list:
-        file_list = {}
-    
-    path = pathlib.Path(target).resolve()
-    if not (is_dir(path) or is_file(path)): 
-        print("ERROR: '{target}' is no valid path")
-        exit()
-        
-    # check if path is already in backup system
-    if label:=find_in_dict(file_list, "path", str(path)):
-        print(f"{path} is already in the backup sytem as {label}")
-        exit()
-    
-    if not alias:
-        # create alias
-        alias = get_random_string(5)
-        while alias in file_list:
-            alias = get_random_string(5)        
-    
-    if not alias in file_list:
-        file_list[alias] = {"path": str(path), "last_backup": None, "last_backup_size": None}
-        jsonio.write(FILE_TABLE, file_list)       
-        print(f"added {path} to the backup system as {alias}")
-    
-def remove_tool(alias):
-    # get current files
-    file_list = jsonio.read(FILE_TABLE)
-    if not file_list:
-        exit()
-    
-    # check if alias exists, if it exists, remove
-    if alias in file_list:
-        del file_list[alias]
-        jsonio.write(FILE_TABLE, file_list) 
-        print(f"removed {alias} from backup") 
-
-def backup_tool(run, alias=None):
-    if not alias:
-        run_for_all = True
-    else:
-        run_for_all = False
-        
-    # ensure direcotry
-    but.make_dir(BACKUP_ARCHIVE)
-    
-    if not run:
-        backup_dry_run(run_for_all, alias)
-    
-    if run:    
-        backup_run(run_for_all, alias)
-    
-def backup_dry_run(run_for_all=True, alias=None):
-    print("dry run, no Backups will be created!")
-    file_list = jsonio.read(FILE_TABLE)
-    if not file_list:
-        exit()
-    
-    for label, data in file_list.items():
-        if run_for_all or label==alias:
-            print(f"Create Backup for {label}")
-     
-
-def backup_run(run_for_all=True, alias=None):
-    # get current files
-    file_list = jsonio.read(FILE_TABLE)
-    if not file_list:
-        exit()
-        
-    cfg = config.read(CFG_FILE, CFG_SECTION)
-    
-    for label, data in file_list.items():
-        if run_for_all or label==alias:
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            path = data["path"]
-            data["last_backup"] = timestamp
-            
-            print(f"Create Backup for {label} at {timestamp}")
-            label_path = os.path.join(BACKUP_ARCHIVE, label)        
-            but.make_dir(label_path) # ensure direcotry
-            
-            tmp_copy = f"{label_path}/{label}_{timestamp}"
-            but.copy(path, tmp_copy) # create temporary copy
-            
-            new_zip_path = os.path.join(label_path, f"{label}_{timestamp}.zip")
-            but.make_archive(tmp_copy, new_zip_path) # zip    
-            but.clean_up(label_path, max_files=int(cfg['number']))   # clean up archive
-            
-            time.sleep(1) # maybe longer?
-            but.remove_dir(tmp_copy) # clean up tmp            
-            
-            file_size = os.path.getsize(new_zip_path)
-            data["last_backup_size"] = file_size
-            
-            jsonio.write(FILE_TABLE, file_list)
-           
-def restore_tool(alias):
-    print("restoring", alias, '...')
-    
-    file_list = jsonio.read(FILE_TABLE)
-    if not file_list:
-        exit()
-    
-    if alias in file_list:
-        if date:=file_list[alias]['last_backup']:
-            backup_path = file_list[alias]['path']
-            backup_name = os.path.basename(backup_path)
-            zip_path = os.path.join(BACKUP_ARCHIVE, alias, f"{alias}_{date}.zip")
-
-            unzip_path = os.path.join(TMP_ARCHIVE, alias)
-            but.unpack(zip_path, unzip_path)            
-            tmp_path = os.path.join(unzip_path, f"{alias}_{date}", backup_name)
-            
-            if is_dir(backup_path):
-                restore_folder(tmp_path, backup_path)
-            elif is_file(backup_path):
-                restore_file(tmp_path, backup_path)
-            else:
-                print("ERROR")
-                exit()
-            
-            print(f"restored: {alias}")    
-            but.remove_dir(unzip_path)
-                
-        else:
-            print("no backups so far")
-            
-def restore_file(src, dst):
-    but.move(src, dst)
-
-def restore_folder(src, dst):
-    but.remove_dir(dst)
-    but.move(os.path.join(src), dst)
-    
-
-def config_update(key, value):
-    if key == "backup_root":
-        path = pathlib.Path(value).resolve()
-        
-        if not is_dir(path):
-            print(f"ERROR: '{path}' is not valid")
-            exit()
-        else:
-            value = path
-
-    if key and value:
-        data = {str(key): str(value)}
-        config.update(CFG_FILE, CFG_SECTION, data)
-   
-def config_show():
-    data = config.read(CFG_FILE, CFG_SECTION)
-    print(f"[{CFG_SECTION}]")
-    for k,v in data.items():
-        print(f"{k}: {v}")
-            
-def config_reset():
-    data = {
-            "backup_root": f"{THIS_PATH}/archive",
-            "number": 5
-           }           
-    config.update(CFG_FILE, CFG_SECTION, data)
-
+def init_cfg(root_path, cfg_file, cfg_section):
+    but.config_reset(root_path, cfg_file, cfg_section)
+    #config.create(CFG_FILE, CFG_SECTION, {'backup_root': f"{root_path}/archive", 'number': 5}) # initial
 
 if __name__ == '__main__':
+    THIS_PATH = pathlib.Path(__file__).parent.resolve()
+    CFG_FILE = os.path.join(THIS_PATH, "config.ini")
+    CFG_SECTION = "backuptool"
+    
+    if not is_file(CFG_FILE):
+        init_cfg(THIS_PATH, CFG_FILE, CFG_SECTION)
+        
+    config = but.read_config(CFG_FILE, CFG_SECTION)
+    
+    FILE_TABLE = os.path.join(THIS_PATH, "files.json")
+    BACKUP_ARCHIVE = config['backup_root']
+    TMP_ARCHIVE = os.path.join(THIS_PATH, "tmp")
+    
+    #config = config.read(CFG_FILE, CFG_SECTION)
+    
     parser = argparse.ArgumentParser(prog='BackupTool', description='Backup Tool')
     subparsers = parser.add_subparsers(dest="subparser")
 
@@ -256,8 +51,8 @@ if __name__ == '__main__':
     
     # no idea if this is a good idea :D
     parser_config = subparsers.add_parser("config", help="Configuration")
-    dest = config_data['backup_root']
-    number = config_data['number']
+    dest = config['backup_root']
+    number = config['number']
     parser_config.add_argument('-b', '--backup_root', default=None, help=f"Location for all the Backups. Default {THIS_PATH}/archive, Current {dest}")
     parser_config.add_argument('-n', '--number', type=int, default=None, help=f"Maximum Backups for Alias. Default 5, Current {number}.")
     parser_config.add_argument('-s', '--show', action=argparse.BooleanOptionalAction, help='Show all Coanfigurations')
@@ -270,32 +65,34 @@ if __name__ == '__main__':
             sub = args.subparser
             
             if sub == "show":
-                show_tool(args.all)
+                but.show(FILE_TABLE, args.all)
+                #show_tool(args.all)
             
             elif sub == "add":
-                add_tool(target=args.path, alias=args.alias)
+                but.add(FILE_TABLE, target=args.path, alias=args.alias)
+                #add_tool(target=args.path, alias=args.alias)
                 
             elif sub == "remove":
-                remove_tool(alias=args.alias)
+                but.remove(FILE_TABLE, alias=args.alias)
                 
             elif sub == "backup":
-                backup_tool(run=args.run, alias=args.alias)
+                but.backup(config, FILE_TABLE, BACKUP_ARCHIVE, run=args.run, alias=args.alias)
                 
             elif sub == "restore":
-                restore_tool(alias=args.alias)
+                but.restore(BACKUP_ARCHIVE, TMP_ARCHIVE, FILE_TABLE, alias=args.alias)
                 
             elif sub == "config":
                 if args.reset:
-                    config_reset()
+                    but.config_reset(THIS_PATH, CFG_FILE, CFG_SECTION)
                     
                 if args.backup_root:
-                    config_update("backup_root", args.backup_root)
+                    but.config_update(CFG_FILE, CFG_SECTION, "backup_root", args.backup_root)
                 
                 if args.number:
-                    config_update("number", args.number)
+                    but.config_update(CFG_FILE, CFG_SECTION, "number", args.number)
                     
                 if args.show:
-                    config_show()
+                    but.config_show(CFG_FILE, CFG_SECTION)
                     
         else:
             parser.print_help()
