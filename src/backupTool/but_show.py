@@ -5,11 +5,14 @@ import pathlib
 
 def convert_bytes(size):
     """ Convert bytes to KB, or MB or GB"""
-    for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
-        if size < 1024.0:
-            return "%3.1f %s" % (size, x)
-        size /= 1024.0        
-    return size
+    if size:
+        for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
+            if size < 1024.0:
+                return "%3.1f %s" % (size, x)
+            size /= 1024.0        
+        return size
+    else:
+        return '?'
 
 def show(config, json_file=None, details=False, alias=None):
     if not json_file:
@@ -24,6 +27,12 @@ def show(config, json_file=None, details=False, alias=None):
         show_backups_for_alias(config, alias)
         
     else:
+        if details:
+            entry = f"alias: path (size) - last backup timestamp" 
+        else:
+            entry = f"alias: path"
+        print(entry)
+            
         for label, data in file_list.items():
             if details:
                 entry = f"{label}: {data['path']} ({convert_bytes(data['last_backup_size'])}) - {data['last_backup']}" 
