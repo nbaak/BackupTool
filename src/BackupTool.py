@@ -25,12 +25,14 @@ if __name__ == '__main__':
     TMP_ARCHIVE = os.path.join(THIS_PATH, "tmp")
     
     #config = config.read(CFG_FILE, CFG_SECTION)
+    # for python3.8 'store_true'
+    # for python3.9+ argparse.BooleanOptionalAction
     
     parser = argparse.ArgumentParser(prog='BackupTool', description='Backup Tool')
     subparsers = parser.add_subparsers(dest="subparser")
 
     parser_show = subparsers.add_parser("show", help="Show Files/Folders in Backup", description="Show Files/Folders in Backup")
-    parser_show.add_argument('-d', '--details', action=argparse.BooleanOptionalAction, help='show more details')
+    parser_show.add_argument('-d', '--details', action='store_true', help='show more details')
     parser_show.add_argument('-a', '--alias', type=str, default=None, help='show details for specific alias')
 
 
@@ -44,13 +46,12 @@ if __name__ == '__main__':
 
 
     parser_backup = subparsers.add_parser("backup", help="Backup Files/Folders")
-    parser_backup.add_argument('-r', '--run', action=argparse.BooleanOptionalAction, help='run backup for all')
+    parser_backup.add_argument('-r', '--run', action='store_true', help='run backup for all')
     parser_backup.add_argument('-a', '--alias', help='run for specific Alias')
 
     parser_restore = subparsers.add_parser("restore", help="Restore Files/Folders")
-    #parser_restore.add_argument('-a', '--alias', help='Restore Backup for Alias from the Backup System')
     parser_restore.add_argument('alias', metavar='alias', type=str, help="Restore Backup for Alias from the Backup System")
-    parser_restore.add_argument('-r', '--run', action=argparse.BooleanOptionalAction, help='run restore for alias')
+    parser_restore.add_argument('-r', '--run', action='store_true', help='run restore for alias')
     parser_restore.add_argument('-v', '--version', default=0, type=int, help='Nummber of Backup you want to restore, default 0.')
     
     # no idea if this is a good idea :D
@@ -59,8 +60,8 @@ if __name__ == '__main__':
     number = config['number']
     parser_config.add_argument('-b', '--backup_root', default=None, help=f"Location for all the Backups. Default {THIS_PATH}/archive, Current {dest}")
     parser_config.add_argument('-n', '--number', type=int, default=None, help=f"Maximum Backups for Alias. Default 5, Current {number}.")
-    parser_config.add_argument('-s', '--show', action=argparse.BooleanOptionalAction, help='Show all Coanfigurations')
-    parser_config.add_argument('--reset', action=argparse.BooleanOptionalAction, help='Reset Config to Default')
+    parser_config.add_argument('-s', '--show', action='store_true', help='Show all Coanfigurations')
+    parser_config.add_argument('--reset', action='store_true', help='Reset Config to Default')
 
     args = parser.parse_args()
 
