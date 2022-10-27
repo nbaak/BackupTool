@@ -43,6 +43,7 @@ if __name__ == '__main__':
 
     parser_remove = subparsers.add_parser("remove", help="Remove a File/Folder from the Backup System")
     parser_remove.add_argument('alias', metavar='alias', type=str, help="Alias for Path/Folder")
+    parser_remove.add_argument('-d', '--delete', action='store_true', help="Confirm delete archived Backups for alias")
 
 
     parser_backup = subparsers.add_parser("backup", help="Backup Files/Folders")
@@ -76,7 +77,7 @@ if __name__ == '__main__':
                 but.add(FILE_TABLE, target=args.path, alias=args.alias)
                 
             elif sub == "remove":
-                but.remove(FILE_TABLE, alias=args.alias)
+                but.remove(config, FILE_TABLE, alias=args.alias, confirm=args.delete)
                 
             elif sub == "backup":
                 but.backup(config, FILE_TABLE, BACKUP_ARCHIVE, run=args.run, alias=args.alias)
