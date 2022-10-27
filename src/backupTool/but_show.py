@@ -2,6 +2,8 @@
 from .jsonio import read
 import os
 import pathlib
+from backupTool.but_folder import get_basename
+from attr.setters import convert
 
 def convert_bytes(size):
     """ Convert bytes to KB, or MB or GB"""
@@ -43,12 +45,8 @@ def show(config, json_file=None, details=False, alias=None):
 
 def get_list_of_files(path, filter='**/*.zip'):
     root = pathlib.Path(path)    
-    
-    # files = list(root.resolve().glob(filter)).sort(key=os.path.getctime)
     files = sorted(root.resolve().glob(filter), key=os.path.getmtime, reverse=True)
     return files
-
-    #files.sort(key=os.path.getctime)
     
     
 def show_backups_for_alias(config, alias):
@@ -57,7 +55,20 @@ def show_backups_for_alias(config, alias):
     backups = get_list_of_files(path)
     alias_nr = 0
     
-    for backup in backups:
-        print(alias_nr, backup)
+    print("nr alias date:time           size")
+
+    for backup_file in backups:
+        file_size = os.path.getsize(backup_file)
+        file = get_basename(backup_file).split('.')[0]
+        alias, date, time = file.split('_')
+        
+        print(f"{alias_nr}: {alias} {date}:{time} {convert_bytes(file_size)}")
         alias_nr += 1    
+    
+    
+    
+    
+    
+    
+    
     
