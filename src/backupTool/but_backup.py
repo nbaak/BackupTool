@@ -60,7 +60,8 @@ def backup_run(config, files_table_path, archive_path, run_for_all=True, alias=N
             copy(path, tmp_copy) # create temporary copy
             
             new_zip_path = os.path.join(label_path, f"{label}_{timestamp}.zip")
-            make_archive(tmp_copy, new_zip_path) # zip    
+            make_archive(tmp_copy, new_zip_path) # zip
+            
             clean_up(label_path, max_files=int(cfg['number']))   # clean up archive
             
             time.sleep(1) # maybe longer?
