@@ -11,7 +11,11 @@ def init_cfg(root_path, cfg_file, cfg_section):
     #config.create(CFG_FILE, CFG_SECTION, {'backup_root': f"{root_path}/archive", 'number': 5}) # initial
 
 if __name__ == '__main__':
+    
     THIS_PATH = pathlib.Path(__file__).parent.resolve()
+    if pathlib.Path(__file__).is_symlink():
+        THIS_PATH = pathlib.Path(os.readlink(__file__)).parent.resolve() 
+        
     CFG_FILE = os.path.join(THIS_PATH, "config.ini")
     CFG_SECTION = "backuptool"
     
