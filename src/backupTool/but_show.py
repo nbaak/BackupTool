@@ -30,16 +30,16 @@ def show(config, json_file=None, details=False, alias=None):
         
     else:
         if details:
-            entry = f"alias: path (size) - last backup timestamp" 
+            entry = f"{'alias':10}: path (size) - last backup timestamp" 
         else:
             entry = f"alias: path"
         print(entry)
             
         for label, data in file_list.items():
             if details:
-                entry = f"{label}: {data['path']} ({convert_bytes(data['last_backup_size'])}) - {data['last_backup']}" 
+                entry = f"{label:10}: {data['path']} ({convert_bytes(data['last_backup_size'])}) - {data['last_backup']}" 
             else:
-                entry = f"{label}: {data['path']}" 
+                entry = f"{label:10}: {data['path']}" 
             print(entry)
             
 
@@ -55,7 +55,7 @@ def show_backups_for_alias(config, alias):
     backups = get_list_of_files(path)
     alias_nr = 0
     
-    print(f"{'nr':2}: {'alias':8} {'date':10} {'time':8} size")
+    print(f"{'nr':2}: {'alias':10} {'date':10} {'time':8} size")
 
     for backup_file in backups:
         file_size = os.path.getsize(backup_file)
@@ -64,7 +64,7 @@ def show_backups_for_alias(config, alias):
         
         date, time = date_time.split('_')
         
-        print(f"{alias_nr:2}: {alias:8} {date:10} {time:8} {convert_bytes(file_size)}")
+        print(f"{alias_nr:2}: {alias:10} {date:10} {time:8} {convert_bytes(file_size)}")
         alias_nr += 1    
     
     
