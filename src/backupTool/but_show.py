@@ -55,7 +55,7 @@ def show_backups_for_alias(config, alias):
     backups = get_list_of_files(path)
     alias_nr = 0
     
-    print("nr alias date:time           size")
+    print(f"{'nr':2}: {'alias':8} {'date':10} {'time':8} size")
 
     for backup_file in backups:
         file_size = os.path.getsize(backup_file)
@@ -64,7 +64,7 @@ def show_backups_for_alias(config, alias):
         
         date, time = date_time.split('_')
         
-        print(f"{alias_nr}: {alias} {date}:{time} {convert_bytes(file_size)}")
+        print(f"{alias_nr:2}: {alias:8} {date:10} {time:8} {convert_bytes(file_size)}")
         alias_nr += 1    
     
     
